@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>礁溪尋寶：溫泉小鎮的祕密任務 ｜ 3D 文化尋寶遊戲</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>♨️</text></svg>">
+  <script type="module" crossorigin src="./assets/index-BjEchORH.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-7qSrw5Ny.css">
+</head>
+<body>
+  <!-- 3D WebGL 畫布容器 -->
+  <div id="canvas-container"></div>
+
+  <!-- 遊戲 HUD 操作層 -->
+  <div id="hud-overlay">
+    <!-- 頂部資訊列 -->
+    <header class="top-bar">
+      <div class="title-badge hud-interactive">
+        <h1>♨️ 礁溪尋寶：溫泉小鎮的祕密任務</h1>
+        <p>宜蘭礁溪 3D 文化尋寶之旅 ｜ 帶著文化護照收集 5 枚印章開啟寶箱</p>
+      </div>
+
+      <div class="top-actions hud-interactive">
+        <!-- 快速地標導航（便於展示錄影與評分） -->
+        <div class="fast-travel-bar">
+          <button class="fast-travel-btn" id="btn-ft-plaza">🏠 任務板</button>
+          <button class="fast-travel-btn" id="btn-ft-tang">♨️ 湯圍溝</button>
+          <button class="fast-travel-btn" id="btn-ft-xie">🏮 協天廟</button>
+          <button class="fast-travel-btn" id="btn-ft-wu">🏞️ 五峰旗</button>
+        </div>
+
+        <!-- 音效開關 -->
+        <button class="btn-hud" id="btn-toggle-sound">🔊 音效</button>
+
+        <!-- 文化尋寶護照按鈕 -->
+        <button class="btn-hud btn-passport-trigger" id="hud-passport-btn">
+          📖 文化護照
+          <span class="progress-pill" id="hud-progress-pill">0 / 5</span>
+        </button>
+
+        <!-- 雷達小地圖 -->
+        <div class="minimap-container" title="城鎮雷達小地圖">
+          <canvas id="minimap-canvas"></canvas>
+          <div class="minimap-center-pointer"></div>
+        </div>
+      </div>
+    </header>
+
+    <!-- 鄰近線索調查提示橫幅 -->
+    <div id="prompt-banner" class="hidden">
+      🔍 按 <span class="key-badge">E</span> 鍵或點擊以調查線索
+    </div>
+
+    <!-- 底部資訊與控制說明 -->
+    <footer class="bottom-bar">
+      <div class="hint-card hud-interactive">
+        <div class="hint-title">🧭 當前尋寶提示</div>
+        <div class="hint-text" id="hud-hint-text">
+          歡迎來到礁溪！請依導引先前往西側【湯圍溝溫泉公園】調查告示牌，解密美人湯湧泉！
+        </div>
+      </div>
+
+      <div class="controls-help hud-interactive">
+        ⌨️ <strong>操作說明：</strong> [W A S D / 方向鍵] 移動 ｜ [滑鼠拖曳] 旋轉視角 ｜ [滾輪] 縮放 ｜ [E 鍵 / 點擊] 調查 ｜ [P 鍵] 文化護照
+      </div>
+    </footer>
+
+    <!-- 行動裝置虛擬搖桿 -->
+    <div id="virtual-joystick-zone">
+      <div id="virtual-joystick-knob"></div>
+    </div>
+  </div>
+
+  <!-- 1. 任務與線索彈跳視窗 -->
+  <div id="task-modal-backdrop" class="modal-backdrop">
+    <div class="modal-window">
+      <div class="modal-header">
+        <h2 id="task-modal-title">🔍 調查線索</h2>
+        <button class="modal-close-btn" id="task-modal-close" title="關閉視窗">&times;</button>
+      </div>
+      <div class="modal-body" id="task-modal-content">
+        <!-- 動態注入線索照片、題目、操作介面與文化解說 -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. 礁溪文化尋寶護照彈跳視窗 -->
+  <div id="passport-modal-backdrop" class="modal-backdrop">
+    <div class="modal-window passport-window">
+      <div class="modal-header">
+        <h2>📖 礁溪文化尋寶護照</h2>
+        <button class="modal-close-btn" id="passport-modal-close" title="關閉護照">&times;</button>
+      </div>
+      <div class="modal-body" id="passport-modal-body">
+        <!-- 動態注入 5 大印章槽、實景照片手帳與任務指南 -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. 文化寶箱解鎖與「礁溪文化旅人」數位徽章頒發視窗 -->
+  <div id="victory-modal-backdrop" class="modal-backdrop">
+    <div class="modal-window victory-modal">
+      <div class="modal-header" style="background: linear-gradient(135deg, #b7950b, #d4af37);">
+        <h2>🏆 恭喜開啟文化寶箱！</h2>
+        <button class="modal-close-btn" id="victory-modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <h3 style="color:#7d6608; font-size:1.4rem; font-weight:900;">🎉 榮獲「礁溪文化旅人」數位榮譽徽章！</h3>
+        <p style="margin-top:6px; color:#555;">
+          您已成功走訪三大地標、破解五項文化任務，集滿五枚專屬印章！
+        </p>
+
+        <!-- 旋轉金色榮譽徽章 -->
+        <div class="badge-wrapper">
+          <div class="badge-frame">
+            <div class="badge-icon">🎖️</div>
+            <div class="badge-title">礁溪文化旅人</div>
+            <div style="font-size:0.65rem; color:#856404; font-weight:bold; margin-top:2px;">CULTURAL TRAVELER</div>
+          </div>
+        </div>
+
+        <!-- 結業證書內容卡 -->
+        <div style="background: white; border: 2px dashed #d4af37; border-radius: 12px; padding: 16px; text-align: left; margin: 16px 0; font-size: 0.9rem; line-height: 1.6;">
+          <div style="font-weight: bold; color: #962d22; font-size: 1.05rem; border-bottom: 1px solid #f1f2f6; padding-bottom: 6px; margin-bottom: 8px;">
+            📜 礁溪文化探索研習證書
+          </div>
+          <div><strong>探索學員：</strong> 礁溪文化初訪旅人</div>
+          <div><strong>通過認證項目：</strong></div>
+          <ul style="margin-left: 20px; color: #444; margin-top: 4px;">
+            <li>♨️ 湯圍溝溫泉公園：弱鹼性碳酸氫鈉泉（美人湯）泉質辨識</li>
+            <li>🥬 溫泉農業科技：溫泉水抗寒灌溉「溫泉空心菜」在地智慧</li>
+            <li>🏮 礁溪協天廟：清嘉慶九年建廟古蹟巡禮、閩南燕尾脊與壽龜祭</li>
+            <li>🎋 台灣傳統民俗：誠心擲筊「聖筊」神聖文化與和諧哲理</li>
+            <li>🏞️ 五峰旗風景區：三層斷崖飛瀑構造與五座尖峰地名由來</li>
+          </ul>
+          <div style="margin-top: 8px; font-size: 0.78rem; color: #7f8c8d; text-align: right;">
+            認證日期：<span id="cert-date"></span> ｜ 宜蘭礁溪文化尋寶總部 發行
+          </div>
+        </div>
+
+        <!-- 底部互動按鈕 -->
+        <div class="victory-actions">
+          <button class="btn-secondary" id="btn-print-certificate">🖨️ 列印 / 儲存證書</button>
+          <button class="btn-primary-action btn-replay" id="btn-replay-game">🔄 重新遊玩 (進度歸零)</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
